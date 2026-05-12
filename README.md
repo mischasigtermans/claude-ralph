@@ -2,26 +2,26 @@
 
 An opinionated take on the Ralph autonomous loop for Claude Code. Describe a feature, walk away, come back to commits.
 
-The concept comes from [Geoffrey Huntley](https://ghuntley.com/ralph/), who named it after Ralph Wiggum from The Simpsons. Ralph is the kind of contributor who keeps showing up, picks the next thing off the list, and gets it done — with a project manager looking over the work every few iterations to keep things on track.
+The concept comes from [Geoffrey Huntley](https://ghuntley.com/ralph/), who named it after Ralph Wiggum from The Simpsons. Ralph is the kind of contributor who keeps showing up, picks the next thing off the list, and gets it done, with a project manager looking over the work every few iterations to keep things on track.
 
 Available through the [Ryde Ventures plugin marketplace](https://github.com/rydeventures/claude-plugins).
 
 ## What's in v2.0
 
-Ralph 2.0 is a substantial rethink of v1. The headline differences:
+Ralph 2.0 is a full rethink of v1. The headline differences:
 
-- **One flow.** No more `--roadmap`, `--pause`, "Loopception" mode, or phase setup.
-- **A prose brief.** `.ralph/brief.md` is plain prose — what's being built, what's out of scope, the invariants. Every iteration loads it as plan-time context. v1's biggest failure mode was compressing a planning conversation into JSON bullets and then losing the why.
-- **An planner agent.** Every Nth iteration the loop swaps in a PM-style reviewer (Opus) instead of the usual builder (Sonnet). The planner reads the brief, checks the recent commits, and may rewrite the story list, append learnings, or halt for a replan.
+- **One flow.** No more `--roadmap`, `--pause`, 'Loopception' mode, or phase setup.
+- **A prose brief.** `.ralph/brief.md` is plain prose. What's being built, what's out of scope, the invariants. Every iteration loads it as plan-time context. v1's biggest failure mode was compressing a planning conversation into JSON bullets and then losing the why.
+- **A planner agent.** Every Nth iteration the loop swaps in a PM-style reviewer (Opus) instead of the usual builder (Sonnet). The planner reads the brief, checks the recent commits, and may rewrite the story list, append learnings, or halt for a replan.
 - **State-aware loop.** `.ralph/state.json` is the source of truth for iteration count, cadence, cost, status, and PID. Subcommands (`ralph status`, `ralph stop`, `ralph tail`) read it.
-- **Per-iteration logs.** `.ralph/logs/iter-NN-{role}.log[.json]` captures every iteration's full output — audit trail and debugging in one.
+- **Per-iteration logs.** `.ralph/logs/iter-NN-{role}.log[.json]` captures every iteration's full output. Audit trail and debugging in one.
 - **Auto-migration.** v1 `.ralph/` directories migrate on first run.
 
 If you used v1, see [Migration](#migration-from-v1).
 
 ## Installation
 
-### Step 1 — Install the plugin
+### Step 1. Install the plugin
 
 ```bash
 # Add the Ryde Ventures marketplace (one-time)
@@ -31,7 +31,7 @@ If you used v1, see [Migration](#migration-from-v1).
 /plugin install ralph@rydeventures-claude-plugins
 ```
 
-### Step 2 — Install the bash script
+### Step 2. Install the bash script
 
 The plugin ships with a bash runtime. Run the installer once:
 
@@ -60,7 +60,7 @@ That re-runs the installer and refreshes the symlink.
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
 - `jq` for JSON state management (`brew install jq` on macOS)
-- `bash` (zsh users — the script runs under `bash`, not `zsh`)
+- `bash` (zsh users: the script runs under `bash`, not `zsh`)
 
 ## Usage
 
@@ -74,12 +74,12 @@ In Claude Code, in your project directory:
 
 This triggers a short PM interview (max three questions) and writes:
 
-- `.ralph/brief.md` — prose brief
-- `.ralph/stories.json` — story list
-- `.ralph/state.json` — initial loop state
-- `.ralph/progress.txt`, `.ralph/learnings.txt` — loop journals
+- `.ralph/brief.md`: prose brief
+- `.ralph/stories.json`: story list
+- `.ralph/state.json`: initial loop state
+- `.ralph/progress.txt`, `.ralph/learnings.txt`: loop journals
 
-It also picks an **planner cadence** (3, 5, or 10 iterations) based on the scope and writes that into `state.json`.
+It also picks a **planner cadence** (3, 5, or 10 iterations) based on the scope and writes that into `state.json`.
 
 The skill never starts coding. It exits and tells you to run `ralph`.
 
@@ -125,7 +125,7 @@ If the loop is unresponsive after 30 seconds, `ralph stop` offers to send SIGKIL
 │  ralph (bash loop, detached process)                           │
 │                                                                │
 │  Each iteration:                                               │
-│  1. Read state.json — decide role (builder / planner)       │
+│  1. Read state.json, decide role (builder / planner)           │
 │  2. Build inline agent definition via `claude --agents <json>` │
 │  3. Run claude --print --output-format json                    │
 │  4. Parse result, update .ralph/state.json atomically          │
@@ -150,7 +150,7 @@ It does not write code. It always ends with a one-line `<plan-note>` that gets c
 
 ### Why two agents
 
-v1 was one prompt grinding forward with no checkpoint. If a story drifted from the original intent, nothing caught it until the user reviewed at the end. v2's planner is the "PM at 2am" — the human can't be present every iteration, so a separate prompt (different model, different mandate, no code-writing privileges) plays that role.
+v1 was one prompt grinding forward with no checkpoint. If a story drifted from the original intent, nothing caught it until the user reviewed at the end. v2's planner is the 'PM at 2am'. The human can't be present every iteration, so a separate prompt (different model, different mandate, no code-writing privileges) plays that role.
 
 ## The brief
 
@@ -170,7 +170,7 @@ settings. UI follows the existing Tailwind components in resources/views/compone
 
 No admin views, no impersonation, no multi-user/team features. The activity
 feed reads from existing audit_log entries; we are not adding new audit hooks.
-Avatar upload uses the existing Spatie Media Library setup — no new storage code.
+Avatar upload uses the existing Spatie Media Library setup. No new storage code.
 
 ## Invariants
 
@@ -185,7 +185,7 @@ Planner runs every 5 iterations. Moderate scope with a few cross-cutting
 concerns (validation, auth) that warrant a mid-run sanity check.
 ```
 
-If you can't write the brief in two paragraphs, the planning isn't done — go back to the user with one more question or push back to narrow the scope.
+If you can't write the brief in two paragraphs, the planning isn't done. Go back to the user with one more question or push back to narrow the scope.
 
 ## Subcommands
 
@@ -249,8 +249,8 @@ The auto-migration keeps things runnable but produces a weak brief. Re-run `/ral
 ## See also
 
 - [Blog post](https://mischa.sigtermans.me/my-simplified-ralph-loop-setup-for-claude-code) on the v1 setup
-- [Geoffrey Huntley's original Ralph post](https://ghuntley.com/ralph/) — the concept
-- [snarktank/ralph](https://github.com/snarktank/ralph) — Ryan Carson's full implementation
+- [Geoffrey Huntley's original Ralph post](https://ghuntley.com/ralph/): the concept
+- [snarktank/ralph](https://github.com/snarktank/ralph): Ryan Carson's full implementation
 
 ## Credits
 
