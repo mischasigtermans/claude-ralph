@@ -1,9 +1,10 @@
 {
   "name": "ralph",
-  "description": "Autonomous AI development loop for Claude Code. Run Claude repeatedly until your user stories are complete.",
-  "version": "1.1.2",
+  "description": "Autonomous AI development loop for Claude Code. A bash loop alternates a builder agent (builds the next story) and a planner agent (PM that reviews progress against a prose brief).",
+  "version": "2.0.0",
   "author": {
     "name": "Mischa Sigtermans"
   },
-  "repository": "https://github.com/mischasigtermans/ralph"
+  "repository": "https://github.com/mischasigtermans/ralph",
+  "keywords": ["autonomous", "loop", "agent", "background", "pm"]
 }

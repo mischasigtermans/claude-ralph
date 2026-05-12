@@ -1,34 +1,45 @@
 # Ralph
 
-Autonomous AI development loop for Claude Code. Define user stories, run the loop, check back when it's done.
+Autonomous AI development loop for Claude Code. Describe a feature, walk away, come back to commits.
 
-The concept comes from [Geoffrey Huntley](https://ghuntley.com/ralph/), who named it after Ralph Wiggum from The Simpsons. Each iteration spawns a fresh Claude instance with no memory of previous runs. The AI's work persists through files: git commits, a progress log, and a learnings file.
+The concept comes from [Geoffrey Huntley](https://ghuntley.com/ralph/), who named it after Ralph Wiggum from The Simpsons. Ralph is the kind of contributor who keeps showing up, picks the next thing off the list, and gets it done — with a project manager looking over the work every few iterations to keep things on track.
 
 Available through the [Ryde Ventures plugin marketplace](https://github.com/rydeventures/claude-plugins).
 
+## What's in v2.0
+
+Ralph 2.0 is a substantial rethink of v1. The headline differences:
+
+- **One flow.** No more `--roadmap`, `--pause`, "Loopception" mode, or phase setup.
+- **A prose brief.** `.ralph/brief.md` is plain prose — what's being built, what's out of scope, the invariants. Every iteration loads it as plan-time context. v1's biggest failure mode was compressing a planning conversation into JSON bullets and then losing the why.
+- **An planner agent.** Every Nth iteration the loop swaps in a PM-style reviewer (Opus) instead of the usual builder (Sonnet). The planner reads the brief, checks the recent commits, and may rewrite the story list, append learnings, or halt for a replan.
+- **State-aware loop.** `.ralph/state.json` is the source of truth for iteration count, cadence, cost, status, and PID. Subcommands (`ralph status`, `ralph stop`, `ralph tail`) read it.
+- **Per-iteration logs.** `.ralph/logs/iter-NN-{role}.log[.json]` captures every iteration's full output — audit trail and debugging in one.
+- **Auto-migration.** v1 `.ralph/` directories migrate on first run.
+
+If you used v1, see [Migration](#migration-from-v1).
+
 ## Installation
 
-### Step 1: Install the plugin
+### Step 1 — Install the plugin
 
 ```bash
 # Add the Ryde Ventures marketplace (one-time)
 /plugin marketplace add rydeventures/claude-plugins
 
-# Install the plugin
+# Install
 /plugin install ralph@rydeventures-claude-plugins
 ```
 
-### Step 2: Install the bash script
+### Step 2 — Install the bash script
 
-The plugin includes a bash script that runs the autonomous loop. The installer creates a symlink to `ralph` in `~/.local/bin/`.
-
-Run the installer:
+The plugin ships with a bash runtime. Run the installer once:
 
 ```bash
 ~/.claude/plugins/cache/rydeventures-claude-plugins/ralph/*/scripts/install.sh
 ```
 
-If `~/.local/bin` isn't in your PATH, add it:
+This symlinks `~/.local/bin/ralph` → the plugin's `ralph.sh`. Make sure `~/.local/bin` is on your `PATH`:
 
 ```bash
 echo 'export PATH="$PATH:$HOME/.local/bin"' >> ~/.zshrc
@@ -37,243 +48,209 @@ source ~/.zshrc
 
 ### Updating
 
-After updating the plugin in Claude Code, re-run the installer to update the symlinks. The `ralph` command will remind you if this is needed.
-
-### Manual Installation
-
-Alternatively, copy the files manually from this repository. Note: manual installs use copies, not symlinks, so you'll need to re-copy after updates.
-
-**Bash script and prompt (required):**
+After updating the plugin in Claude Code, run:
 
 ```bash
-# Create directories
-mkdir -p ~/.local/bin ~/.claude
-
-# Copy files
-cp scripts/ralph.sh ~/.local/bin/ralph
-cp scripts/ralph-prompt.md ~/.claude/ralph-prompt.md
-
-# Make executable
-chmod +x ~/.local/bin/ralph
+ralph update
 ```
 
-**Skill (for `/ralph` command):**
+That re-runs the installer and refreshes the symlink.
 
-User-level (available in all projects):
-```bash
-mkdir -p ~/.claude/skills/ralph
-cp skills/ralph/SKILL.md ~/.claude/skills/ralph/skill.md
-```
+### Requirements
 
-Project-level (available only in this project):
-```bash
-mkdir -p .claude/skills/ralph
-cp skills/ralph/SKILL.md .claude/skills/ralph/skill.md
-```
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
+- `jq` for JSON state management (`brew install jq` on macOS)
+- `bash` (zsh users — the script runs under `bash`, not `zsh`)
 
 ## Usage
 
-### 1. Initialize a project
+### 1. Set up a project
 
-Open Claude Code in your project directory and run:
-
-```
-/ralph
-```
-
-Claude will ask about your feature and analyze the scope. For smaller tasks, it creates stories directly. For larger tasks, it offers to create a roadmap with phases.
+In Claude Code, in your project directory:
 
 ```
-.ralph/
-├── stories.json    # Your user stories
-├── progress.txt    # Implementation log per iteration
-├── learnings.txt   # Patterns and gotchas (persists across runs)
-└── roadmap.json    # (optional) Multi-phase project roadmap
+/ralph "add a user dashboard with auth, profile editing, and an activity feed"
 ```
+
+This triggers a short PM interview (max three questions) and writes:
+
+- `.ralph/brief.md` — prose brief
+- `.ralph/stories.json` — story list
+- `.ralph/state.json` — initial loop state
+- `.ralph/progress.txt`, `.ralph/learnings.txt` — loop journals
+
+It also picks an **planner cadence** (3, 5, or 10 iterations) based on the scope and writes that into `state.json`.
+
+The skill never starts coding. It exits and tells you to run `ralph`.
 
 ### 2. Run the loop
 
-Exit Claude Code and run from terminal:
+From a terminal in the project directory:
 
 ```bash
-ralph              # Runs until all stories complete
-ralph 50           # Limit to 50 iterations
-ralph 1            # Single iteration (useful for testing)
-ralph update       # Refresh symlink after plugin update
-ralph --version    # Show version
-ralph --help       # Show help
+ralph                          # foreground
+nohup ralph &                  # detached, output to nohup.out
+tmux new -s ralph 'ralph'      # in a tmux session
+ralph --max-iter 20            # cap at 20 iterations
 ```
 
-### Loopception
+The loop runs as a separate process. It does not need Claude Code to stay open.
 
-For larger projects, Ralph can go deeper. A loop within a loop: phases containing stories, each phase spawning its own Ralph loop until complete.
+### 3. Monitor
 
-When `/ralph` detects a multi-phase task, it offers to create a roadmap:
-
-```
-/ralph "build a dashboard with auth, API, and frontend"
-
-Claude: "This looks like it could be split into phases:
-1. Authentication
-2. API layer
-3. Frontend dashboard
-
-Should I create a roadmap with phases, or keep it as one set of stories?"
-```
-
-If you choose roadmap, it creates `.ralph/roadmap.json`:
-
-```json
-{
-  "project": "Dashboard",
-  "phases": [
-    {
-      "id": 1,
-      "title": "Authentication",
-      "description": ["User model and migrations", "Login/logout endpoints"],
-      "complete": false
-    },
-    {
-      "id": 2,
-      "title": "API Layer",
-      "description": ["REST endpoints for CRUD", "Authentication middleware"],
-      "complete": false
-    },
-    {
-      "id": 3,
-      "title": "Frontend",
-      "description": ["Dashboard components", "Forms and validation"],
-      "complete": false
-    }
-  ]
-}
-```
-
-Then run:
+From any terminal, in the same project directory:
 
 ```bash
-ralph --roadmap                 # Runs all phases
-ralph --roadmap --pause         # Pauses between phases for review
+ralph status                   # current iteration, cost, last commit, eval note
+ralph tail                     # follow .ralph/progress.txt
 ```
 
-Each phase:
-1. Sets up `.ralph/` with stories for that phase
-2. Runs iterations until all stories complete
-3. Marks the phase `complete: true` in roadmap.json
-4. Continues to next phase (or pauses if `--pause`)
+### 4. Stop
 
-### 3. Review results
+```bash
+ralph stop                     # SIGTERM the loop, exits after current iteration
+```
 
-When Ralph finishes (or hits max iterations), check:
-- Git log for commits
-- `.ralph/progress.txt` for what was implemented
-- `.ralph/learnings.txt` for patterns discovered
-- `.ralph/stories.json` for completion status
+If the loop is unresponsive after 30 seconds, `ralph stop` offers to send SIGKILL.
 
 ## How it works
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│  /ralph                                                 │
-│  Creates .ralph/ with stories, progress, learnings      │
-└─────────────────────────────────────────────────────────┘
-                          ↓
-┌─────────────────────────────────────────────────────────┐
-│  ralph (bash script)                                    │
-│  Loops until all stories complete or max iterations     │
-│                                                         │
-│  Each iteration:                                        │
-│  1. Spawns fresh Claude instance                        │
-│  2. Claude reads .ralph/ files                          │
-│  3. Implements highest priority incomplete story        │
-│  4. Runs tests, commits, updates files                  │
-│  5. Outputs <promise>COMPLETE</promise> when done       │
-└─────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────┐
+│  /ralph "feature description"                                  │
+│  PM interview → .ralph/brief.md + stories.json + state.json    │
+└────────────────────────────────────────────────────────────────┘
+                              ↓
+┌────────────────────────────────────────────────────────────────┐
+│  ralph (bash loop, detached process)                           │
+│                                                                │
+│  Each iteration:                                               │
+│  1. Read state.json — decide role (builder / planner)       │
+│  2. Build inline agent definition via `claude --agents <json>` │
+│  3. Run claude --print --output-format json                    │
+│  4. Parse result, update .ralph/state.json atomically          │
+│  5. Write .ralph/logs/iter-NN-{role}.log[.json]               │
+│  6. Detect sentinels: COMPLETE / replan-needed / plan-note     │
+└────────────────────────────────────────────────────────────────┘
 ```
 
-### Loopception mode
+### Builder agent (Sonnet by default)
 
-```
-┌─────────────────────────────────────────────────────────┐
-│  /ralph (detects large scope)                           │
-│  Creates .ralph/roadmap.json with phases                │
-└─────────────────────────────────────────────────────────┘
-                          ↓
-┌─────────────────────────────────────────────────────────┐
-│  ralph --roadmap                                        │
-│  Outer loop: iterates through phases                    │
-│                                                         │
-│  ┌───────────────────────────────────────────────────┐  │
-│  │  For each phase:                                  │  │
-│  │  1. Spawns Claude to run /ralph for phase         │  │
-│  │  2. Creates stories.json for this phase           │  │
-│  │                                                   │  │
-│  │  ┌─────────────────────────────────────────────┐  │  │
-│  │  │  Inner loop: iterates through stories       │  │  │
-│  │  │  (same as regular ralph)                    │  │  │
-│  │  └─────────────────────────────────────────────┘  │  │
-│  │                                                   │  │
-│  │  3. Marks phase complete in roadmap.json          │  │
-│  └───────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────┘
-```
+Runs every iteration except when the cadence calls for a review. Reads `brief.md`, `learnings.txt`, `progress.txt`, picks the highest-priority incomplete story, implements it, runs quality checks, commits with `feat: [Story ID] - [Story Title]`, and stops.
 
-## The learnings file
+### Planner agent (Opus by default)
 
-Knowledge compounds across iterations. After several runs, `.ralph/learnings.txt` might look like:
+Runs every Nth iteration (cadence set by the brief). Treats `brief.md` as read-only ground truth. Reads recent commits, progress, learnings, and (optionally) recent logs from `.ralph/logs/`. May:
+
+- Rewrite `.ralph/stories.json` (add, remove, reorder, split, merge)
+- Append to `.ralph/learnings.txt`
+- Halt the loop with `<replan-needed>` if the brief itself looks wrong
+
+It does not write code. It always ends with a one-line `<plan-note>` that gets captured into `state.json.last_planner_note`.
+
+### Why two agents
+
+v1 was one prompt grinding forward with no checkpoint. If a story drifted from the original intent, nothing caught it until the user reviewed at the end. v2's planner is the "PM at 2am" — the human can't be present every iteration, so a separate prompt (different model, different mandate, no code-writing privileges) plays that role.
+
+## The brief
+
+The most important thing `/ralph` produces is a two-paragraph prose brief. It's the contract every iteration reads. Example:
 
 ```markdown
-# Project Learnings
+# User Dashboard
 
-## Codebase Patterns
-- This project uses Repository pattern for data access
-- All API responses use JsonResource classes
-- Feature tests extend TestCase with RefreshDatabase trait
+## What we're building
 
-## Gotchas
-- The User model uses SoftDeletes - check for trashed records
-- Queue jobs need QUEUE_CONNECTION=sync in tests
+A logged-in dashboard at /dashboard for the existing Laravel app, served by a
+new DashboardController. Three sections: profile editing (name, email, avatar),
+activity feed (last 30 days of the user's own actions, paginated), and account
+settings. UI follows the existing Tailwind components in resources/views/components/.
+
+## What's out of scope
+
+No admin views, no impersonation, no multi-user/team features. The activity
+feed reads from existing audit_log entries; we are not adding new audit hooks.
+Avatar upload uses the existing Spatie Media Library setup — no new storage code.
+
+## Invariants
+
+- All routes go through the existing `auth` middleware
+- No changes to the User model migration; new fields go in a separate table
+- Tailwind classes only; no new CSS files
+- `php artisan test --compact` must pass on every commit
+
+## Cadence
+
+Planner runs every 5 iterations. Moderate scope with a few cross-cutting
+concerns (validation, auth) that warrant a mid-run sanity check.
 ```
 
-Every new iteration reads this first, avoiding repeated mistakes.
+If you can't write the brief in two paragraphs, the planning isn't done — go back to the user with one more question or push back to narrow the scope.
 
-## Story sizing
+## Subcommands
 
-The sweet spot is one story per context window:
+| Command | Purpose |
+|---|---|
+| `ralph` | Run the loop until complete, halted, or stopped |
+| `ralph --max-iter N` | Cap at N iterations |
+| `ralph status` | Pretty-print `.ralph/state.json` |
+| `ralph stop` | Graceful stop (SIGTERM, exits after current iteration) |
+| `ralph tail` | `tail -f .ralph/progress.txt` |
+| `ralph update` | Re-run installer (refresh symlink after plugin update) |
+| `ralph -v` | Print version |
+| `ralph -h` | Show help |
 
-**Right-sized:**
-- Add a database migration and model
-- Create a single component
-- Add an API endpoint with validation
+## Environment variables
 
-**Too big (split these):**
-- "Build the dashboard" → model, list view, detail view, actions
-- "Refactor the API" → one story per endpoint
+| Variable | Default | Purpose |
+|---|---|---|
+| `RALPH_BUILDER_MODEL` | `claude-sonnet-4-6` | Override the builder model |
+| `RALPH_PLANNER_MODEL` | `claude-opus-4-7` | Override the planner model |
+
+## State files
+
+```
+.ralph/
+  brief.md                       prose brief, written by /ralph (read-only after that)
+  stories.json                   story list (builder flips passes:true; planner may rewrite)
+  state.json                     loop state (atomic writes by ralph)
+  progress.txt                   append-only human log
+  learnings.txt                  cross-iteration patterns
+  ralph.pid                      PID of running loop (deleted on exit)
+  logs/
+    iter-NN-builder.log        human-readable result text
+    iter-NN-builder.log.json   raw JSON envelope (cost, stop_reason, session_id, full result)
+    iter-NN-planner.log
+    iter-NN-planner.log.json
+  archive/
+    roadmap.v1.json              (only present if migrated from v1)
+```
 
 ## When to intervene
 
-Ralph works best on greenfield features with clear acceptance criteria. Intervene when:
-- The same story fails twice (needs splitting)
-- A story needs context it can't discover from files
-- Tests require manual setup or external services
+Ralph works best on greenfield features with clear acceptance criteria. Step in when:
 
-## File locations
+- The same story fails twice → it needs splitting
+- A story needs context not derivable from the brief or the codebase → add it to `brief.md` and re-run `/ralph`
+- The planner outputs `<replan-needed>` → run `/ralph` again to write a new brief
+- Tests require manual setup, secrets, or external services → handle outside the loop
 
-| File | Location | Purpose |
-|------|----------|---------|
-| `ralph` | `~/.local/bin/ralph` | Symlink to bash script |
-| `ralph-prompt.md` | Plugin cache | Instructions for each iteration |
-| `/ralph` skill | Plugin | Initializes projects |
+## Migration from v1
+
+When you upgrade and run `ralph` in an old project:
+
+- `roadmap.json` → archived to `.ralph/archive/roadmap.v1.json`
+- `brief.md` → auto-generated as a stub, with a header asking you to re-run `/ralph` for a real brief
+- `state.json` → created with cadence defaulted to 5, status `initialized`
+- `progress.txt`, `learnings.txt`, `stories.json` → preserved as-is
+
+The auto-migration keeps things runnable but produces a weak brief. Re-run `/ralph` for a proper one before committing to a long run.
 
 ## See also
 
-- [Blog post](https://mischa.sigtermans.me/my-simplified-ralph-loop-setup-for-claude-code) explaining the setup
-- [snarktank/ralph](https://github.com/snarktank/ralph) - Ryan Carson's full implementation with flowcharts
-
-## Requirements
-
-- [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
-- `jq` for JSON parsing (`brew install jq` on macOS)
+- [Blog post](https://mischa.sigtermans.me/my-simplified-ralph-loop-setup-for-claude-code) on the v1 setup
+- [Geoffrey Huntley's original Ralph post](https://ghuntley.com/ralph/) — the concept
+- [snarktank/ralph](https://github.com/snarktank/ralph) — Ryan Carson's full implementation
 
 ## Credits
 
