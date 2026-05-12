@@ -1,6 +1,6 @@
 # Ralph
 
-Autonomous AI development loop for Claude Code. Describe a feature, walk away, come back to commits.
+An opinionated take on the Ralph autonomous loop for Claude Code. Describe a feature, walk away, come back to commits.
 
 The concept comes from [Geoffrey Huntley](https://ghuntley.com/ralph/), who named it after Ralph Wiggum from The Simpsons. Ralph is the kind of contributor who keeps showing up, picks the next thing off the list, and gets it done — with a project manager looking over the work every few iterations to keep things on track.
 
