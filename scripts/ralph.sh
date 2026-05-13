@@ -550,7 +550,7 @@ Error: Ralph prompt files not found.
   expected: $PLANNER_PROMPT
 
 Reinstall the plugin:
-  /plugin install ralph@rydeventures-claude-plugins
+  /plugin install ralph@by-mischa
 EOF
         exit 1
     fi
@@ -663,7 +663,7 @@ case "${1:-}" in
         else
             echo "Error: installer not found at $INSTALLER" >&2
             echo "Reinstall the plugin:" >&2
-            echo "  /plugin install ralph@rydeventures-claude-plugins" >&2
+            echo "  /plugin install ralph@by-mischa" >&2
             exit 1
         fi
         ;;

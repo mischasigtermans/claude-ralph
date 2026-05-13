@@ -1,34 +1,35 @@
-# Ralph
+# Claude Ralph
+
+[![Version](https://img.shields.io/badge/dynamic/json?url=https://raw.githubusercontent.com/mischasigtermans/claude-ralph/main/.claude-plugin/plugin.json&query=$.version&label=version&prefix=v)](https://github.com/mischasigtermans/claude-ralph)
+[![License](https://img.shields.io/github/license/mischasigtermans/claude-ralph)](LICENSE)
 
 An opinionated take on the Ralph autonomous loop for Claude Code. Describe a feature, walk away, come back to commits.
 
 The concept comes from [Geoffrey Huntley](https://ghuntley.com/ralph/), who named it after Ralph Wiggum from The Simpsons. Ralph is the kind of contributor who keeps showing up, picks the next thing off the list, and gets it done, with a project manager looking over the work every few iterations to keep things on track.
 
-Available through the [Ryde Ventures plugin marketplace](https://github.com/rydeventures/claude-plugins).
+## What makes this Ralph different
 
-## What's in v2.0
+The core concept comes from Geoffrey Huntley: a contributor that keeps showing up, picks the next thing off the list, gets it done, with a PM looking over the work every few iterations. The implementation choices that distinguish this version from other Ralph runners:
 
-Ralph 2.0 is a full rethink of v1. The headline differences:
-
-- **One flow.** No more `--roadmap`, `--pause`, 'Loopception' mode, or phase setup.
-- **A prose brief.** `.ralph/brief.md` is plain prose. What's being built, what's out of scope, the invariants. Every iteration loads it as plan-time context. v1's biggest failure mode was compressing a planning conversation into JSON bullets and then losing the why.
-- **A planner agent.** Every Nth iteration the loop swaps in a PM-style reviewer (Opus) instead of the usual builder (Sonnet). The planner reads the brief, checks the recent commits, and may rewrite the story list, append learnings, or halt for a replan.
-- **State-aware loop.** `.ralph/state.json` is the source of truth for iteration count, cadence, cost, status, and PID. Subcommands (`ralph status`, `ralph stop`, `ralph tail`) read it.
+- **A prose brief, not a ticket list.** `.ralph/brief.md` is plain prose: what's being built, what's out of scope, the invariants. Every iteration loads it as plan-time context. Compressing the planning conversation into JSON bullets is fast to write but loses the *why*, and an agent without the why drifts.
+- **The PM is a separate agent on a fixed cadence.** Every Nth iteration the loop swaps in a PM-style reviewer (Opus) instead of the usual builder (Sonnet). The planner reads the brief, checks recent commits, may rewrite the story list, append learnings, or halt for a replan. It doesn't write code.
+- **State files, not log scraping.** `.ralph/state.json` is the source of truth for iteration count, cadence, cost, status, and PID. Subcommands (`ralph status`, `ralph stop`, `ralph tail`) read it. No grepping logs to find out where the loop is.
+- **One flow.** No `--roadmap`, no `--pause`, no 'Loopception' mode, no phase setup. Describe a feature, run `ralph`, monitor or walk away.
 - **Per-iteration logs.** `.ralph/logs/iter-NN-{role}.log[.json]` captures every iteration's full output. Audit trail and debugging in one.
-- **Auto-migration.** v1 `.ralph/` directories migrate on first run.
+- **Auto-migration from 0.x.** If you ran an earlier version of this Ralph, `.ralph/` directories migrate on first run.
 
-If you used v1, see [Migration](#migration-from-v1).
+If you used 0.x, see [Migration](#migration-from-0x).
 
 ## Installation
 
 ### Step 1. Install the plugin
 
 ```bash
-# Add the Ryde Ventures marketplace (one-time)
-/plugin marketplace add rydeventures/claude-plugins
+# Add the marketplace (one-time)
+/plugin marketplace add mischasigtermans/by-mischa
 
 # Install
-/plugin install ralph@rydeventures-claude-plugins
+/plugin install ralph@by-mischa
 ```
 
 ### Step 2. Install the bash script
@@ -36,7 +37,7 @@ If you used v1, see [Migration](#migration-from-v1).
 The plugin ships with a bash runtime. Run the installer once:
 
 ```bash
-~/.claude/plugins/cache/rydeventures-claude-plugins/ralph/*/scripts/install.sh
+~/.claude/plugins/cache/by-mischa/ralph/*/scripts/install.sh
 ```
 
 This symlinks `~/.local/bin/ralph` → the plugin's `ralph.sh`. Make sure `~/.local/bin` is on your `PATH`:
@@ -56,7 +57,7 @@ ralph update
 
 That re-runs the installer and refreshes the symlink.
 
-### Requirements
+### Requires
 
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
 - `jq` for JSON state management (`brew install jq` on macOS)
@@ -150,7 +151,7 @@ It does not write code. It always ends with a one-line `<plan-note>` that gets c
 
 ### Why two agents
 
-v1 was one prompt grinding forward with no checkpoint. If a story drifted from the original intent, nothing caught it until the user reviewed at the end. v2's planner is the 'PM at 2am'. The human can't be present every iteration, so a separate prompt (different model, different mandate, no code-writing privileges) plays that role.
+0.x was one prompt grinding forward with no checkpoint. If a story drifted from the original intent, nothing caught it until the user reviewed at the end. 1.0's planner is the 'PM at 2am'. The human can't be present every iteration, so a separate prompt (different model, different mandate, no code-writing privileges) plays that role.
 
 ## The brief
 
@@ -235,14 +236,14 @@ Ralph works best on greenfield features with clear acceptance criteria. Step in 
 - The planner outputs `<replan-needed>` → run `/ralph` again to write a new brief
 - Tests require manual setup, secrets, or external services → handle outside the loop
 
-## Migration from v1
+## Migration from 0.x
 
 When you upgrade and run `ralph` in an old project:
 
-- `roadmap.json` → archived to `.ralph/archive/roadmap.v1.json`
-- `brief.md` → auto-generated as a stub, with a header asking you to re-run `/ralph` for a real brief
-- `state.json` → created with cadence defaulted to 5, status `initialized`
-- `progress.txt`, `learnings.txt`, `stories.json` → preserved as-is
+- `roadmap.json` archived to `.ralph/archive/roadmap.v1.json` (filename retained for backwards compatibility).
+- `brief.md` auto-generated as a stub, with a header asking you to re-run `/ralph` for a real brief.
+- `state.json` created with cadence defaulted to 5, status `initialized`.
+- `progress.txt`, `learnings.txt`, `stories.json` preserved as-is.
 
 The auto-migration keeps things runnable but produces a weak brief. Re-run `/ralph` for a proper one before committing to a long run.
 
