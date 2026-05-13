@@ -67,7 +67,7 @@ EOF
 
 cmd_status() {
     if [ ! -f ".ralph/state.json" ]; then
-        echo "No .ralph/state.json — run /ralph in Claude Code first."
+        echo "No .ralph/state.json. Run /ralph in Claude Code first."
         exit 1
     fi
 
@@ -113,7 +113,7 @@ cmd_status() {
 
 cmd_stop() {
     if [ ! -f ".ralph/ralph.pid" ]; then
-        echo "No .ralph/ralph.pid — nothing running."
+        echo "No .ralph/ralph.pid. Nothing running."
         exit 1
     fi
 
@@ -184,7 +184,7 @@ migrate_if_needed() {
 # $project_name
 
 > **Auto-generated from v1 stories on $(date -u +%Y-%m-%dT%H:%M:%SZ).**
-> This is a weak brief — please run \`/ralph\` to replace it with a proper one
+> This is a weak brief. Run \`/ralph\` to replace it with a proper one
 > before continuing significant work. Each iteration loads this file as the
 > plan-time context, so it's worth doing well.
 
@@ -199,7 +199,7 @@ $story_titles
 
 ## Invariants
 
-(none captured during migration — re-run \`/ralph\` to surface these)
+(none captured during migration; re-run \`/ralph\` to surface these)
 EOF
         echo "  Wrote stub .ralph/brief.md"
     fi
@@ -250,7 +250,7 @@ EOF
     if [ ! -f ".ralph/progress.txt" ]; then
         printf "# Project Progress Log\n\n---\n\n" > .ralph/progress.txt
     fi
-    printf "## Migration %s — auto-migrated from v1\n\n---\n\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> .ralph/progress.txt
+    printf "## Migration %s: auto-migrated from v1\n\n---\n\n" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> .ralph/progress.txt
 }
 
 # ----- State helpers ---------------------------------------------------------
@@ -272,7 +272,7 @@ STOP_REQUESTED=false
 on_stop_signal() {
     STOP_REQUESTED=true
     echo ""
-    echo "Stop requested — finishing current iteration then exiting..."
+    echo "Stop requested. Finishing current iteration then exiting..."
 }
 
 cleanup_on_exit() {
@@ -394,7 +394,7 @@ run_iteration() {
         local subtype api_err
         subtype=$(echo "$result_event" | jq -r '.subtype // "unknown"')
         api_err=$(echo "$result_event" | jq -r '.api_error_status // ""')
-        echo "✗ claude reported is_error=true (subtype: $subtype, api_status: $api_err) — see $output_json" >&2
+        echo "✗ claude reported is_error=true (subtype: $subtype, api_status: $api_err). See $output_json" >&2
         return 1
     fi
 
@@ -538,7 +538,7 @@ Error: .ralph/brief.md is missing or empty.
   expected: $PWD/.ralph/brief.md
 
 The brief is the plan-time context every iteration loads. Run /ralph in
-Claude Code to author one — without it the builder has no idea what's
+Claude Code to author one. Without it the builder has no idea what's
 being built.
 EOF
         exit 1

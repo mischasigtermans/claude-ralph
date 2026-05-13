@@ -4,6 +4,16 @@
 
 Major rewrite. Two-agent loop, prose brief, state-aware bash runtime.
 
+**Breaking**
+
+- `--roadmap` mode and 'Loopception' removed.
+- `--pause` flag removed.
+- `roadmap.json` state file removed (auto-archived on migration).
+- Multi-phase scope detection in the SKILL removed.
+- `<ready>PHASE_READY</ready>` sentinel removed.
+- Positional iteration argument removed (`ralph 50`; use `ralph --max-iter 50`).
+- Interactive update prompt during loop startup removed (didn't work in detached mode).
+
 **Added**
 
 - `.ralph/brief.md`: prose brief written by `/ralph`, loaded as plan-time context every iteration.
@@ -30,46 +40,53 @@ Major rewrite. Two-agent loop, prose brief, state-aware bash runtime.
 - Builder stop wording strengthened: 'STOP IMMEDIATELY' after one story, no second-iteration drift.
 - Plugin manifest gains `keywords` field.
 
-**Removed**
-
-- `--roadmap` mode and 'Loopception'.
-- `--pause` flag.
-- `roadmap.json` state file (auto-archived on migration).
-- Multi-phase scope detection in the SKILL.
-- `<ready>PHASE_READY</ready>` sentinel.
-- Positional iteration argument (`ralph 50`; use `ralph --max-iter 50`).
-- Interactive update prompt during loop startup (didn't work in detached mode).
-
 **Migration**
 
 0.x `.ralph/` directories run a one-time migration on first `ralph` invocation. Existing `stories.json`, `progress.txt`, `learnings.txt` are preserved. `roadmap.json` is moved to `.ralph/archive/roadmap.v1.json` (filename preserved for backwards compatibility). A stub `brief.md` is generated; users are urged to re-run `/ralph` for a proper one.
 
 ## [0.2.2] - 2026-01-28
 
-- Fixed version check comparing against oldest cached version instead of newest.
+**Changed**
+
 - Update prompt asks to run update now (defaults to yes).
+
+**Fixed**
+
+- Version check was comparing against the oldest cached version instead of the newest.
 
 ## [0.2.1] - 2026-01-28
 
-- Auto-detect roadmap.json and prompt to run in roadmap mode (defaults to yes).
+**Added**
+
+- Auto-detect `roadmap.json` and prompt to run in roadmap mode (defaults to yes).
 
 ## [0.2.0] - 2026-01-28
 
-- Added Loopception: `--roadmap` flag for multi-phase project orchestration (a loop within a loop).
-- Added `--pause` flag to pause between phases for review.
+**Added**
+
+- Loopception: `--roadmap` flag for multi-phase project orchestration (a loop within a loop).
+- `--pause` flag to pause between phases for review.
 - `/ralph` now detects scope and offers to create a roadmap for large tasks.
+- `ralph update` to refresh symlink after plugin updates.
+- `ralph --version` and `ralph --help`.
+
+**Changed**
+
 - Roadmap stored as `.ralph/roadmap.json` for reliable jq parsing.
 - Default iterations changed to infinite (use `ralph 50` to limit).
-- Added `ralph update` to refresh symlink after plugin updates.
-- Added `ralph --version` and `ralph --help`.
-- Refactored bash script with reusable functions.
+- Bash script refactored with reusable functions.
 
 ## [0.1.1] - 2026-01-27
 
-- Installer now creates symlink instead of copying files.
-- Bash script reads prompt directly from plugin cache (with fallback to ~/.claude/).
-- Broken symlink detection removed (no longer needed).
-- Re-run installer after plugin updates to fix symlinks.
+**Changed**
+
+- Installer creates a symlink instead of copying files.
+- Bash script reads prompt directly from plugin cache (with fallback to `~/.claude/`).
+- Re-run the installer after plugin updates to fix symlinks.
+
+**Removed**
+
+- Broken-symlink detection (no longer needed).
 
 ## [0.1.0] - 2026-01-27
 
